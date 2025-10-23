@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Chest Clicker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative;
+        }
+
+        .chest-container {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            user-select: none;
+            z-index: 20;
+            transform: translateZ(0);
+        }
+
+        .chest-container:active {
+            transform: scale(0.95) translateZ(0);
+        }
+
+        .chest {
+            width: 180px;
+            height: 180px;
+            background-image: url('https://i.ibb.co/0pX8qKCJ/chestclosed.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+            transform: translateZ(0);
+        }
+
+        .chest.opened {
+            background-image: url('https://i.ibb.co/LDfdPvzL/chestopened.png');
+            animation: shine 0.5s ease-in-out 3;
+        }
+
+        @keyframes shine {
+            0%, 100% { filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3)) brightness(1); }
+            50% { filter: drop-shadow(0 10px 30px rgba(255,215,0,0.8)) brightness(1.2); }
+        }
+
+        .coin {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle at 30% 30%, #FFD700, #D4AF37, #B8860B);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10;
+            box-shadow: 0 0 6px rgba(255, 215, 0, 0.8), inset 0 2px 3px rgba(255, 255, 255, 0.5);
+            border: 1px solid #FFEC8B;
+            transform: translateZ(0);
+        }
+
+        .confetti {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .click-effect {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            pointer-events: none;
+            z-index: 5;
+            animation: ripple 0.6s ease-out;
+            transform: translateZ(0);
+        }
+
+        @keyframes ripple {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        .floating-emoji {
+            position: absolute;
+            font-size: 24px;
+            pointer-events: none;
+            z-index: 15;
+            animation: floatUp 1s ease-out forwards;
+            transform: translateZ(0);
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-40px) scale(0.5); opacity: 0; }
+        }
+
+        .background-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .bg-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); }
+            100% { transform: translateY(-100px) rotate(720deg); }
+        }
+
+        .celebration-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent, rgba(0,0,0,0.5));
+            pointer-events: none;
+            opacity: 0;
+            z-index: 30;
+            transition: opacity 0.5s ease;
+        }
+
+        .celebration-overlay.active {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .chest {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .coin {
+                width: 14px;
+                height: 14px;
+            }
+            
+            .click-effect {
+                width: 35px;
+                height: 35px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chest {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .coin {
+                width: 12px;
+                height: 12px;
+            }
+            
+            .click-effect {
+                width: 30px;
+                height: 30px;
+            }
+            
+            .floating-emoji {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chest-container" id="chestContainer">
+            <div class="chest" id="chest"></div>
+        </div>
+    </div>
+
+    <div class="background-particles" id="backgroundParticles"></div>
+    <div class="celebration-overlay" id="celebrationOverlay"></div>
+
+    <script>
+        let clickCount = 0;
+        const chest = document.getElementById('chest');
+        const chestContainer = document.getElementById('chestContainer');
+        const overlay = document.getElementById('celebrationOverlay');
+        
+        // Particle pool to reuse elements
+        const particlePool = [];
+        const maxParticles = 300;
+        
+        // Create background particles
+        function createBackgroundParticles() {
+            const container = document.getElementById('backgroundParticles');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'bg-particle';
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.top = Math.random() * 100 + 'vh';
+                particle.style.animationDuration = (Math.random() * 20 + 10) + 's';
+                particle.style.opacity = Math.random() * 0.5 + 0.1;
+                container.appendChild(particle);
+            }
+        }
+
+        // Get particle from pool or create new
+        function getParticle() {
+            if (particlePool.length > 0) {
+                return particlePool.pop();
+            }
+            return document.createElement('div');
+        }
+
+        // Return particle to pool
+        function returnParticle(particle) {
+            if (particlePool.length < maxParticles) {
+                particle.style.display = 'none';
+                particlePool.push(particle);
+            } else {
+                particle.remove();
+            }
+        }
+
+        // Create cinematic particle effect
+        function createCinematicParticle(x, y, type) {
+            const particle = getParticle();
+            
+            if (type === 'coin') {
+                particle.className = 'coin';
+            } else {
+                particle.className = 'confetti';
+                particle.style.background = `hsl(${Math.random() * 360}, 100%, 60%)`;
+                particle.style.width = Math.random() * 8 + 4 + 'px';
+                particle.style.height = Math.random() * 8 + 4 + 'px';
+                particle.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+            }
+            
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.position = 'fixed';
+            particle.style.zIndex = '10';
+            particle.style.display = 'block';
+            
+            document.body.appendChild(particle);
+            
+            // Animate particle with cinematic effect
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * 200 + 150;
+            const duration = Math.random() * 800 + 1200;
+            
+            const startX = x;
+            const startY = y;
+            const endX = startX + Math.cos(angle) * distance;
+            const endY = startY + Math.sin(angle) * distance;
+            
+            let startTime = Date.now();
+            
+            function animate() {
+                let elapsed = Date.now() - startTime;
+                if (elapsed > duration) {
+                    returnParticle(particle);
+                    return;
+                }
+                
+                let progress = elapsed / duration;
+                // Use easing for cinematic feel
+                progress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+                
+                const currentX = startX + (endX - startX) * progress;
+                const currentY = startY + (endY - startY) * progress;
+                
+                // Add rotation
+                const rotation = progress * 720;
+                
+                particle.style.left = currentX + 'px';
+                particle.style.top = currentY + 'px';
+                particle.style.opacity = 1 - progress * 0.8;
+                particle.style.transform = `rotate(${rotation}deg) scale(${1 - progress * 0.5})`;
+                
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+
+        // Create ripple effect
+        function createRipple(x, y) {
+            const ripple = getParticle();
+            ripple.className = 'click-effect';
+            ripple.style.left = (x - 20) + 'px';
+            ripple.style.top = (y - 20) + 'px';
+            ripple.style.display = 'block';
+            document.body.appendChild(ripple);
+            
+            setTimeout(() => {
+                returnParticle(ripple);
+            }, 600);
+        }
+
+        // Create floating emoji
+        function createFloatingEmoji(x, y, emoji) {
+            const emojiElement = getParticle();
+            emojiElement.className = 'floating-emoji';
+            emojiElement.textContent = emoji;
+            emojiElement.style.left = x + 'px';
+            emojiElement.style.top = y + 'px';
+            emojiElement.style.fontSize = (Math.random() * 16 + 16) + 'px';
+            emojiElement.style.display = 'block';
+            document.body.appendChild(emojiElement);
+            
+            setTimeout(() => {
+                returnParticle(emojiElement);
+            }, 1000);
+        }
+
+        // Chest click handler
+        chestContainer.addEventListener('click', (e) => {
+            clickCount++;
+            
+            // Create ripple effect
+            createRipple(e.clientX, e.clientY);
+            
+            // Create cinematic particles
+            const particleCount = window.innerWidth < 768 ? 6 : 10;
+            for (let i = 0; i < particleCount; i++) {
+                setTimeout(() => {
+                    createCinematicParticle(e.clientX, e.clientY, 'coin');
+                }, i * 50);
+            }
+            
+            // Create floating emoji
+            createFloatingEmoji(e.clientX, e.clientY, ['✨', '⭐', '💎', '🎁'][Math.floor(Math.random() * 4)]);
+            
+            // Vibrate effect
+            chestContainer.style.transform = 'scale(0.95) rotate(2deg) translateZ(0)';
+            setTimeout(() => {
+                chestContainer.style.transform = 'scale(1) rotate(0deg) translateZ(0)';
+            }, 100);
+            
+            // Check if chest should open
+            if (clickCount === 30) {
+                chest.classList.add('opened');
+                
+                // Activate celebration overlay
+                overlay.classList.add('active');
+                
+                // Create massive cinematic particle explosion
+                const celebrationCount = window.innerWidth < 768 ? 100 : 200;
+                for (let i = 0; i < celebrationCount; i++) {
+                    setTimeout(() => {
+                        createCinematicParticle(e.clientX, e.clientY, 'coin');
+                        createCinematicParticle(e.clientX, e.clientY, 'confetti');
+                    }, i * 15);
+                }
+                
+                // Create celebration emojis
+                const emojiCount = window.innerWidth < 768 ? 15 : 30;
+                for (let i = 0; i < emojiCount; i++) {
+                    setTimeout(() => {
+                        createFloatingEmoji(
+                            Math.random() * window.innerWidth,
+                            Math.random() * window.innerHeight,
+                            ['🎉', '🎊', '✨', '⭐', '💎', '🎁', '🏆', '⭐'][Math.floor(Math.random() * 8)]
+                        );
+                    }, i * 100);
+                }
+                
+                // Add extra effects
+                document.body.style.animation = 'celebrate 1s ease-in-out';
+                setTimeout(() => {
+                    document.body.style.animation = '';
+                }, 1000);
+            }
+        });
+
+        // Add celebrate animation to CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes celebrate {
+                0%, 100% { filter: brightness(1) hue-rotate(0deg); }
+                25% { filter: brightness(1.5) hue-rotate(90deg); }
+                50% { filter: brightness(1.2) hue-rotate(180deg); }
+                75% { filter: brightness(1.4) hue-rotate(270deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize background particles
+        createBackgroundParticles();
+
+        // Add some random floating emojis occasionally (only after chest opens)
+        setInterval(() => {
+            if (clickCount >= 30) {
+                const emoji = getParticle();
+                emoji.textContent = ['✨', '⭐', '💎', '🏆', '🎁', '🎊', '🎉'][Math.floor(Math.random() * 7)];
+                emoji.style.position = 'fixed';
+                emoji.style.left = Math.random() * 100 + 'vw';
+                emoji.style.top = '-50px';
+                emoji.style.fontSize = (Math.random() * 20 + 16) + 'px';
+                emoji.style.zIndex = '20';
+                emoji.style.pointerEvents = 'none';
+                emoji.style.opacity = '0.8';
+                emoji.style.display = 'block';
+                
+                document.body.appendChild(emoji);
+                
+                // Animate floating emoji
+                let startTime = Date.now();
+                const duration = 4000;
+                const startX = parseFloat(emoji.style.left);
+                const startY = -50;
+                const endY = window.innerHeight + 50;
+                
+                function animateEmoji() {
+                    let elapsed = Date.now() - startTime;
+                    if (elapsed > duration) {
+                        returnParticle(emoji);
+                        return;
+                    }
+                    
+                    let progress = elapsed / duration;
+                    progress = 1 - Math.pow(1 - progress, 2); // Ease out
+                    
+                    const currentY = startY + (endY - startY) * progress;
+                    const currentX = startX + Math.sin(elapsed / 500) * 15; // Slight horizontal movement
+                    
+                    emoji.style.top = currentY + 'px';
+                    emoji.style.left = currentX + 'vw';
+                    emoji.style.transform = `rotate(${progress * 360}deg)`;
+                    
+                    requestAnimationFrame(animateEmoji);
+                }
+                
+                animateEmoji();
+            }
+        }, 800);
+    </script>
+</body>
+</html>
+
