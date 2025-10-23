@@ -44,8 +44,10 @@
         }
 
         .chest {
-            width: 220px;
-            height: 220px;
+            width: 80vw;
+            height: 80vw;
+            max-width: 300px;
+            max-height: 300px;
             background-image: url('https://i.ibb.co/0pX8qKCJ/chestclosed.png');
             background-size: contain;
             background-repeat: no-repeat;
@@ -67,29 +69,29 @@
 
         .coin {
             position: absolute;
-            width: 14px;
-            height: 14px;
+            width: 18px;
+            height: 18px;
             background: radial-gradient(circle at 30% 30%, #FFD700, #D4AF37, #B8860B);
             border-radius: 50%;
             pointer-events: none;
             z-index: 10;
-            box-shadow: 0 0 5px rgba(255, 215, 0, 0.8), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 6px rgba(255, 215, 0, 0.8), inset 0 2px 3px rgba(255, 255, 255, 0.5);
             border: 1px solid #FFEC8B;
             transform: translateZ(0);
         }
 
         .confetti {
             position: absolute;
-            width: 7px;
-            height: 7px;
+            width: 10px;
+            height: 10px;
             pointer-events: none;
             z-index: 10;
         }
 
         .click-effect {
             position: absolute;
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             background: rgba(255,255,255,0.3);
             pointer-events: none;
@@ -105,7 +107,7 @@
 
         .floating-emoji {
             position: absolute;
-            font-size: 22px;
+            font-size: 26px;
             pointer-events: none;
             z-index: 15;
             animation: floatUp 1s ease-out forwards;
@@ -129,8 +131,8 @@
 
         .bg-particle {
             position: absolute;
-            width: 2px;
-            height: 2px;
+            width: 3px;
+            height: 3px;
             background: rgba(255,255,255,0.3);
             border-radius: 50%;
             animation: float 15s infinite linear;
@@ -157,44 +159,6 @@
         .celebration-overlay.active {
             opacity: 1;
         }
-
-        @media (max-width: 768px) {
-            .chest {
-                width: 180px;
-                height: 180px;
-            }
-            
-            .coin {
-                width: 12px;
-                height: 12px;
-            }
-            
-            .click-effect {
-                width: 35px;
-                height: 35px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .chest {
-                width: 150px;
-                height: 150px;
-            }
-            
-            .coin {
-                width: 10px;
-                height: 10px;
-            }
-            
-            .click-effect {
-                width: 30px;
-                height: 30px;
-            }
-            
-            .floating-emoji {
-                font-size: 18px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -215,12 +179,12 @@
         
         // Particle pool to reuse elements
         const particlePool = [];
-        const maxParticles = 200;
+        const maxParticles = 150;
         
         // Create background particles
         function createBackgroundParticles() {
             const container = document.getElementById('backgroundParticles');
-            for (let i = 0; i < 20; i++) {
+            for (let i = 0; i < 15; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'bg-particle';
                 particle.style.left = Math.random() * 100 + 'vw';
@@ -258,8 +222,8 @@
             } else {
                 particle.className = 'confetti';
                 particle.style.background = `hsl(${Math.random() * 360}, 100%, 60%)`;
-                particle.style.width = Math.random() * 6 + 3 + 'px';
-                particle.style.height = Math.random() * 6 + 3 + 'px';
+                particle.style.width = Math.random() * 8 + 4 + 'px';
+                particle.style.height = Math.random() * 8 + 4 + 'px';
                 particle.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
             }
             
@@ -315,8 +279,8 @@
         function createRipple(x, y) {
             const ripple = getParticle();
             ripple.className = 'click-effect';
-            ripple.style.left = (x - 20) + 'px';
-            ripple.style.top = (y - 20) + 'px';
+            ripple.style.left = (x - 22) + 'px';
+            ripple.style.top = (y - 22) + 'px';
             ripple.style.display = 'block';
             document.body.appendChild(ripple);
             
@@ -332,7 +296,7 @@
             emojiElement.textContent = emoji;
             emojiElement.style.left = x + 'px';
             emojiElement.style.top = y + 'px';
-            emojiElement.style.fontSize = (Math.random() * 14 + 14) + 'px';
+            emojiElement.style.fontSize = (Math.random() * 16 + 16) + 'px';
             emojiElement.style.display = 'block';
             document.body.appendChild(emojiElement);
             
@@ -349,11 +313,11 @@
             createRipple(e.clientX, e.clientY);
             
             // Create cinematic particles
-            const particleCount = window.innerWidth < 768 ? 5 : 8;
+            const particleCount = 6;
             for (let i = 0; i < particleCount; i++) {
                 setTimeout(() => {
                     createCinematicParticle(e.clientX, e.clientY, 'coin');
-                }, i * 60);
+                }, i * 70);
             }
             
             // Create floating emoji
@@ -373,24 +337,22 @@
                 overlay.classList.add('active');
                 
                 // Create massive cinematic particle explosion
-                const celebrationCount = window.innerWidth < 768 ? 80 : 150;
-                for (let i = 0; i < celebrationCount; i++) {
+                for (let i = 0; i < 100; i++) {
                     setTimeout(() => {
                         createCinematicParticle(e.clientX, e.clientY, 'coin');
                         createCinematicParticle(e.clientX, e.clientY, 'confetti');
-                    }, i * 12);
+                    }, i * 10);
                 }
                 
                 // Create celebration emojis
-                const emojiCount = window.innerWidth < 768 ? 10 : 20;
-                for (let i = 0; i < emojiCount; i++) {
+                for (let i = 0; i < 15; i++) {
                     setTimeout(() => {
                         createFloatingEmoji(
                             Math.random() * window.innerWidth,
                             Math.random() * window.innerHeight,
                             ['🎉', '🎊', '✨', '⭐', '💎', '🎁', '🏆', '⭐'][Math.floor(Math.random() * 8)]
                         );
-                    }, i * 120);
+                    }, i * 150);
                 }
                 
                 // Add extra effects
@@ -424,7 +386,7 @@
                 emoji.style.position = 'fixed';
                 emoji.style.left = Math.random() * 100 + 'vw';
                 emoji.style.top = '-50px';
-                emoji.style.fontSize = (Math.random() * 18 + 14) + 'px';
+                emoji.style.fontSize = (Math.random() * 20 + 16) + 'px';
                 emoji.style.zIndex = '20';
                 emoji.style.pointerEvents = 'none';
                 emoji.style.opacity = '0.8';
@@ -434,7 +396,7 @@
                 
                 // Animate floating emoji
                 let startTime = Date.now();
-                const duration = 3000;
+                const duration = 2500;
                 const startX = parseFloat(emoji.style.left);
                 const startY = -50;
                 const endY = window.innerHeight + 50;
@@ -450,7 +412,7 @@
                     progress = 1 - Math.pow(1 - progress, 2); // Ease out
                     
                     const currentY = startY + (endY - startY) * progress;
-                    const currentX = startX + Math.sin(elapsed / 500) * 12; // Slight horizontal movement
+                    const currentX = startX + Math.sin(elapsed / 500) * 10; // Slight horizontal movement
                     
                     emoji.style.top = currentY + 'px';
                     emoji.style.left = currentX + 'vw';
@@ -461,7 +423,7 @@
                 
                 animateEmoji();
             }
-        }, 1000);
+        }, 1200);
     </script>
 </body>
 </html>
